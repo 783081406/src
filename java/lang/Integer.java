@@ -1,79 +1,20 @@
-/*
- * Copyright (c) 1994, 2013, Oracle and/or its affiliates. All rights reserved.
- * ORACLE PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- */
-
 package java.lang;
 
 import java.lang.annotation.Native;
 
-/**
- * The {@code Integer} class wraps a value of the primitive type
- * {@code int} in an object. An object of type {@code Integer}
- * contains a single field whose type is {@code int}.
- *
- * <p>In addition, this class provides several methods for converting
- * an {@code int} to a {@code String} and a {@code String} to an
- * {@code int}, as well as other constants and methods useful when
- * dealing with an {@code int}.
- *
- * <p>Implementation note: The implementations of the "bit twiddling"
- * methods (such as {@link #highestOneBit(int) highestOneBit} and
- * {@link #numberOfTrailingZeros(int) numberOfTrailingZeros}) are
- * based on material from Henry S. Warren, Jr.'s <i>Hacker's
- * Delight</i>, (Addison Wesley, 2002).
- *
- * @author  Lee Boynton
- * @author  Arthur van Hoff
- * @author  Josh Bloch
- * @author  Joseph D. Darcy
- * @since JDK1.0
- */
 public final class Integer extends Number implements Comparable<Integer> {
-    /**
-     * A constant holding the minimum value an {@code int} can
-     * have, -2<sup>31</sup>.
-     */
+
+     //设置int最小值界限-2的31次幂，-2147483648
     @Native public static final int   MIN_VALUE = 0x80000000;
 
-    /**
-     * A constant holding the maximum value an {@code int} can
-     * have, 2<sup>31</sup>-1.
-     */
+     //设置int最大值界限2的31次幂-1，2147483647
     @Native public static final int   MAX_VALUE = 0x7fffffff;
 
-    /**
-     * The {@code Class} instance representing the primitive type
-     * {@code int}.
-     *
-     * @since   JDK1.1
-     */
+     //该包装类对应的基本类型
     @SuppressWarnings("unchecked")
     public static final Class<Integer>  TYPE = (Class<Integer>) Class.getPrimitiveClass("int");
 
-    /**
-     * All possible chars for representing a number as a String
-     */
+     //该数组为根据不同基数转换为字符时时，可能出现的数值。例如二进制0,1.十六进制a，b，c这些
     final static char[] digits = {
         '0' , '1' , '2' , '3' , '4' , '5' ,
         '6' , '7' , '8' , '9' , 'a' , 'b' ,
@@ -83,78 +24,186 @@ public final class Integer extends Number implements Comparable<Integer> {
         'u' , 'v' , 'w' , 'x' , 'y' , 'z'
     };
 
-    /**
-     * Returns a string representation of the first argument in the
-     * radix specified by the second argument.
-     *
-     * <p>If the radix is smaller than {@code Character.MIN_RADIX}
-     * or larger than {@code Character.MAX_RADIX}, then the radix
-     * {@code 10} is used instead.
-     *
-     * <p>If the first argument is negative, the first element of the
-     * result is the ASCII minus character {@code '-'}
-     * ({@code '\u005Cu002D'}). If the first argument is not
-     * negative, no sign character appears in the result.
-     *
-     * <p>The remaining characters of the result represent the magnitude
-     * of the first argument. If the magnitude is zero, it is
-     * represented by a single zero character {@code '0'}
-     * ({@code '\u005Cu0030'}); otherwise, the first character of
-     * the representation of the magnitude will not be the zero
-     * character.  The following ASCII characters are used as digits:
-     *
-     * <blockquote>
-     *   {@code 0123456789abcdefghijklmnopqrstuvwxyz}
-     * </blockquote>
-     *
-     * These are {@code '\u005Cu0030'} through
-     * {@code '\u005Cu0039'} and {@code '\u005Cu0061'} through
-     * {@code '\u005Cu007A'}. If {@code radix} is
-     * <var>N</var>, then the first <var>N</var> of these characters
-     * are used as radix-<var>N</var> digits in the order shown. Thus,
-     * the digits for hexadecimal (radix 16) are
-     * {@code 0123456789abcdef}. If uppercase letters are
-     * desired, the {@link java.lang.String#toUpperCase()} method may
-     * be called on the result:
-     *
-     * <blockquote>
-     *  {@code Integer.toString(n, 16).toUpperCase()}
-     * </blockquote>
-     *
-     * @param   i       an integer to be converted to a string.
-     * @param   radix   the radix to use in the string representation.
-     * @return  a string representation of the argument in the specified radix.
-     * @see     java.lang.Character#MAX_RADIX
-     * @see     java.lang.Character#MIN_RADIX
-     */
+    /*
+    该方法根据基数位radix，将整数i根据相关进制转换为字符串，例如：Integer.toString(16,16)
+    得到的结果会是10，
+    */
     public static String toString(int i, int radix) {
+      /*
+      Character类中保存着基数的范围
+      其中Character.MIN_RADIX=2;
+      Character.MAX_RADIX=36
+      如果radix在这范围之外，则默认为10
+      这里为什么这样定界，和前面的final static char[] digits这个数组相关，z表示为35，
+      则相对应的最大只能到35进制
+      */
         if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX)
             radix = 10;
 
-        /* Use the faster version */
+        //如果radix是10，则采用更快的方法toString(int i)来进行转换
         if (radix == 10) {
             return toString(i);
         }
 
+        /*Java中一个整型为4个字节，即为32位，加上一个符号位，最长可以为33位
+          故而创建一个33为的char数组.
+          或许有人不解：四个字节，不是第32位，用0,1来表示正负吗，对的，可是这里涉及到
+          存储到计算的一些基础，我在我博客Java杂谈中也有说到，计算机中是以补码的形式存储。
+          因为负数的补码是其绝对值取反，所以试想一下int的最小值，
+          补码为1000 0000[此处省略24个0]，转变成为反码时，减1，为0111 1111[此处省略24个1]，
+          再转变成为原码1000 0000[此处省略24个0]，所以这里如果以原码形式展示的时候，
+          我们的负数需要一位存储表示
+        */
         char buf[] = new char[33];
+        //判断是否为负数
         boolean negative = (i < 0);
+        //存放的最大位数（排除正负符号）
         int charPos = 32;
-
+        /*
+        正数变负数
+        个人认为两个原因：
+        1.为了统一进行处理，而无需分别对正数负数进行相关处理
+        2.如果使用正数处理，那么最小值转时就会溢出，
+        */
         if (!negative) {
             i = -i;
         }
 
+        /*
+        数学的一些基础知识，如果5进行8或10进制转换，还是5，因为5小于进数数，所以不够除
+        */
         while (i <= -radix) {
+            /*
+            取余操作，倒序存储
+            同时取余结果将从digits数组中获取对应的数值
+            */
             buf[charPos--] = digits[-(i % radix)];
             i = i / radix;
         }
+
+        /*
+        最后一个不够除，直接获取digits数组中的数值存入，例如11进行八进制，
+        那么到这里这个i为3
+        */
         buf[charPos] = digits[-i];
 
+        //如果是负数，则需要一个负数符号暂时，且这个位置在数据前
         if (negative) {
             buf[--charPos] = '-';
         }
 
+        /*
+        因为是倒序存储，所以前面可能没有数据，需要从有数据的位数开始取值，
+        则第二个参数是charPost,第三个参数为取多少位!
+        */
         return new String(buf, charPos, (33 - charPos));
+    }
+
+    //根据给定的整数返回相应的字符串，默认返回十进制字符串
+    public static String toString(int i) {
+        //如果i为最小值，直接返回，因为无法进行第三行代码的-i操作
+        if (i == Integer.MIN_VALUE)
+            return "-2147483648";
+        //如果是负数，需要多一个位来存"-"号
+        int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
+        char[] buf = new char[size];
+        //此方法为获取整数i转换成字符串数组buf，下面会做相关解析
+        getChars(i, size, buf);
+        return new String(buf, true);
+    }
+
+    //成员方法，将包装的int，转变成字符串类型
+    public String toString() {
+        //发现调用的方法还是上面那个静态方法toString
+        return toString(value);
+    }
+
+    final static char [] DigitTens = {
+        '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+        '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
+        '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
+        '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
+        '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
+        '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
+        '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+        '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
+        '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
+        } ;
+
+    final static char [] DigitOnes = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        } ;
+
+        // I use the "invariant division by multiplication" trick to
+        // accelerate Integer.toString.  In particular we want to
+        // avoid division by 10.
+        //
+        // The "trick" has roughly the same performance characteristics
+        // as the "classic" Integer.toString code on a non-JIT VM.
+        // The trick avoids .rem and .div calls but has a longer code
+        // path and is thus dominated by dispatch overhead.  In the
+        // JIT case the dispatch overhead doesn't exist and the
+        // "trick" is considerably faster than the classic code.
+        //
+        // TODO-FIXME: convert (x * 52429) into the equiv shift-add
+        // sequence.
+        //
+        // RE:  Division by Invariant Integers using Multiplication
+        //      T Gralund, P Montgomery
+        //      ACM PLDI 1994
+        //
+
+    /**
+     * Places characters representing the integer i into the
+     * character array buf. The characters are placed into
+     * the buffer backwards starting with the least significant
+     * digit at the specified index (exclusive), and working
+     * backwards from there.
+     *
+     * Will fail if i == Integer.MIN_VALUE
+     */
+    static void getChars(int i, int index, char[] buf) {
+        int q, r;
+        int charPos = index;
+        char sign = 0;
+
+        if (i < 0) {
+            sign = '-';
+            i = -i;
+        }
+
+        // Generate two digits per iteration
+        while (i >= 65536) {
+            q = i / 100;
+        // really: r = i - (q * 100);
+            r = i - ((q << 6) + (q << 5) + (q << 2));
+            i = q;
+            buf [--charPos] = DigitOnes[r];
+            buf [--charPos] = DigitTens[r];
+        }
+
+        // Fall thru to fast mode for smaller numbers
+        // assert(i <= 65536, i);
+        for (;;) {
+            q = (i * 52429) >>> (16+3);
+            r = i - ((q << 3) + (q << 1));  // r = i-(q*10) ...
+            buf [--charPos] = digits [r];
+            i = q;
+            if (i == 0) break;
+        }
+        if (sign != 0) {
+            buf [--charPos] = sign;
+        }
     }
 
     /**
@@ -185,6 +234,24 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     public static String toUnsignedString(int i, int radix) {
         return Long.toUnsignedString(toUnsignedLong(i), radix);
+    }
+
+    /**
+     * Returns a string representation of the argument as an unsigned
+     * decimal value.
+     *
+     * The argument is converted to unsigned decimal representation
+     * and returned as a string exactly as if the argument and radix
+     * 10 were given as arguments to the {@link #toUnsignedString(int,
+     * int)} method.
+     *
+     * @param   i  an integer to be converted to an unsigned string.
+     * @return  an unsigned string representation of the argument.
+     * @see     #toUnsignedString(int, int)
+     * @since 1.8
+     */
+    public static String toUnsignedString(int i) {
+        return Long.toString(toUnsignedLong(i));
     }
 
     /**
@@ -337,131 +404,6 @@ public final class Integer extends Number implements Comparable<Integer> {
         } while (val != 0 && charPos > 0);
 
         return charPos;
-    }
-
-    final static char [] DigitTens = {
-        '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-        '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
-        '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
-        '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
-        '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
-        '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
-        '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
-        '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
-        '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
-        '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
-        } ;
-
-    final static char [] DigitOnes = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        } ;
-
-        // I use the "invariant division by multiplication" trick to
-        // accelerate Integer.toString.  In particular we want to
-        // avoid division by 10.
-        //
-        // The "trick" has roughly the same performance characteristics
-        // as the "classic" Integer.toString code on a non-JIT VM.
-        // The trick avoids .rem and .div calls but has a longer code
-        // path and is thus dominated by dispatch overhead.  In the
-        // JIT case the dispatch overhead doesn't exist and the
-        // "trick" is considerably faster than the classic code.
-        //
-        // TODO-FIXME: convert (x * 52429) into the equiv shift-add
-        // sequence.
-        //
-        // RE:  Division by Invariant Integers using Multiplication
-        //      T Gralund, P Montgomery
-        //      ACM PLDI 1994
-        //
-
-    /**
-     * Returns a {@code String} object representing the
-     * specified integer. The argument is converted to signed decimal
-     * representation and returned as a string, exactly as if the
-     * argument and radix 10 were given as arguments to the {@link
-     * #toString(int, int)} method.
-     *
-     * @param   i   an integer to be converted.
-     * @return  a string representation of the argument in base&nbsp;10.
-     */
-    public static String toString(int i) {
-        if (i == Integer.MIN_VALUE)
-            return "-2147483648";
-        int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
-        char[] buf = new char[size];
-        getChars(i, size, buf);
-        return new String(buf, true);
-    }
-
-    /**
-     * Returns a string representation of the argument as an unsigned
-     * decimal value.
-     *
-     * The argument is converted to unsigned decimal representation
-     * and returned as a string exactly as if the argument and radix
-     * 10 were given as arguments to the {@link #toUnsignedString(int,
-     * int)} method.
-     *
-     * @param   i  an integer to be converted to an unsigned string.
-     * @return  an unsigned string representation of the argument.
-     * @see     #toUnsignedString(int, int)
-     * @since 1.8
-     */
-    public static String toUnsignedString(int i) {
-        return Long.toString(toUnsignedLong(i));
-    }
-
-    /**
-     * Places characters representing the integer i into the
-     * character array buf. The characters are placed into
-     * the buffer backwards starting with the least significant
-     * digit at the specified index (exclusive), and working
-     * backwards from there.
-     *
-     * Will fail if i == Integer.MIN_VALUE
-     */
-    static void getChars(int i, int index, char[] buf) {
-        int q, r;
-        int charPos = index;
-        char sign = 0;
-
-        if (i < 0) {
-            sign = '-';
-            i = -i;
-        }
-
-        // Generate two digits per iteration
-        while (i >= 65536) {
-            q = i / 100;
-        // really: r = i - (q * 100);
-            r = i - ((q << 6) + (q << 5) + (q << 2));
-            i = q;
-            buf [--charPos] = DigitOnes[r];
-            buf [--charPos] = DigitTens[r];
-        }
-
-        // Fall thru to fast mode for smaller numbers
-        // assert(i <= 65536, i);
-        for (;;) {
-            q = (i * 52429) >>> (16+3);
-            r = i - ((q << 3) + (q << 1));  // r = i-(q*10) ...
-            buf [--charPos] = digits [r];
-            i = q;
-            if (i == 0) break;
-        }
-        if (sign != 0) {
-            buf [--charPos] = sign;
-        }
     }
 
     final static int [] sizeTable = { 9, 99, 999, 9999, 99999, 999999, 9999999,
@@ -919,20 +861,6 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     public double doubleValue() {
         return (double)value;
-    }
-
-    /**
-     * Returns a {@code String} object representing this
-     * {@code Integer}'s value. The value is converted to signed
-     * decimal representation and returned as a string, exactly as if
-     * the integer value were given as an argument to the {@link
-     * java.lang.Integer#toString(int)} method.
-     *
-     * @return  a string representation of the value of this object in
-     *          base&nbsp;10.
-     */
-    public String toString() {
-        return toString(value);
     }
 
     /**
