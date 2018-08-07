@@ -118,6 +118,7 @@ public final class Integer extends Number implements Comparable<Integer> {
         return toString(value);
     }
 
+    //填充十位上的数字
     final static char [] DigitTens = {
         '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
         '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
@@ -131,6 +132,7 @@ public final class Integer extends Number implements Comparable<Integer> {
         '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
         } ;
 
+    //填充个位上的数字
     final static char [] DigitOnes = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -145,38 +147,59 @@ public final class Integer extends Number implements Comparable<Integer> {
         } ;
 
     /*
-	将整数i，按照index位置，更新字符串数组buf
-	例子：
-	第一个例子：
-	char[] cc=new char[4];
-	getChars(1234,4,cc);//结果：[1, 2, 3, 4]
-	第二个例子：
-	char[] cc=new char[4];
-	getChars(12,3,cc);//结果：[ , 1, 2, ]
+  	将整数i，按照index位置，更新字符串数组buf
+  	例子：
+  	第一个例子：
+  	char[] cc=new char[4];
+  	getChars(1234,4,cc);//结果：[1, 2, 3, 4]
+  	第二个例子：
+  	char[] cc=new char[4];
+  	getChars(12,3,cc);//结果：[ , 1, 2, ]
      */
     static void getChars(int i, int index, char[] buf) {
         int q, r;
         int charPos = index;
         char sign = 0;
 
+        /*
+        如果为负数标记sign为-，同时统一变成正数处理
+        当然从这里可以看出，如果是Integer.MIN_VALUE转变成正数岂不是有问题？
+        作为好奇宝宝的我，去debug了一下，竟然运行过去，可是没有转换成正数
+        不过到了下面的运行就GG了，所以总的来说，如果用Integer.MIN_VALUE就凉了
+        所以上面toString第一件事也就是判断是否为Integer.MIN_VALUE
+        */
         if (i < 0) {
             sign = '-';
             i = -i;
         }
 
-        // Generate two digits per iteration
+        /*
+        接下来的代码首先要清楚两个点：
+        1.移位操作的效率要比乘除快
+        2.乘法效率要比除法效率快
+        首先讲解一下下面这段代码操作，它将大于等于65536，按照index的位置，
+        倒序存储到buf数组中，从index位置往数组下标为0的方向存。并且每次存两位数，个位和十位
+        例如：65537，index为7，运行一次：buf[6]=7,buf[5]=3。
+        可能会问为啥要用65536作为判断值呢？
+        */
         while (i >= 65536) {
+            //目的是为了每次循环只取出后两位，将前面数据保留，继续遍历或进行下面操作
             q = i / 100;
-        // really: r = i - (q * 100);
+            //下面的写法等同i-((q*2^6)+(q*2^5)+(q*2^2))=i(64q-32q-4q)=i-100q
+            //目的为了得到每次i的最后两个数字
             r = i - ((q << 6) + (q << 5) + (q << 2));
             i = q;
+            //和r%10得到同一个结果
             buf [--charPos] = DigitOnes[r];
+            //和r/10得到同一个结果
             buf [--charPos] = DigitTens[r];
         }
 
         // Fall thru to fast mode for smaller numbers
         // assert(i <= 65536, i);
         for (;;) {
+            //可以理解成(i * 52429)/2^19=(i * 52429)/524288,大致可以看作i/10,
+            //通过乘法和移位操作来代替除法，提高效率
             q = (i * 52429) >>> (16+3);
             r = i - ((q << 3) + (q << 1));  // r = i-(q*10) ...
             buf [--charPos] = digits [r];
