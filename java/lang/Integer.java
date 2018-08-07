@@ -70,7 +70,7 @@ public final class Integer extends Number implements Comparable<Integer> {
         }
 
         /*
-        数学的一些基础知识，如果5进行8或10进制转换，还是5，因为5小于进数数，所以不够除
+        数学的一些基础知识，如果5进行8或10进制转换，还是5，因为5小于进制数，所以不够除
         */
         while (i <= -radix) {
             /*
@@ -107,7 +107,7 @@ public final class Integer extends Number implements Comparable<Integer> {
         //如果是负数，需要多一个位来存"-"号
         int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
         char[] buf = new char[size];
-        //此方法为获取整数i转换成字符串数组buf，下面会做相关解析
+        //此方法为将整数i转换成字符串数组buf，下面会做相关解析
         getChars(i, size, buf);
         return new String(buf, true);
     }
@@ -144,33 +144,15 @@ public final class Integer extends Number implements Comparable<Integer> {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         } ;
 
-        // I use the "invariant division by multiplication" trick to
-        // accelerate Integer.toString.  In particular we want to
-        // avoid division by 10.
-        //
-        // The "trick" has roughly the same performance characteristics
-        // as the "classic" Integer.toString code on a non-JIT VM.
-        // The trick avoids .rem and .div calls but has a longer code
-        // path and is thus dominated by dispatch overhead.  In the
-        // JIT case the dispatch overhead doesn't exist and the
-        // "trick" is considerably faster than the classic code.
-        //
-        // TODO-FIXME: convert (x * 52429) into the equiv shift-add
-        // sequence.
-        //
-        // RE:  Division by Invariant Integers using Multiplication
-        //      T Gralund, P Montgomery
-        //      ACM PLDI 1994
-        //
-
-    /**
-     * Places characters representing the integer i into the
-     * character array buf. The characters are placed into
-     * the buffer backwards starting with the least significant
-     * digit at the specified index (exclusive), and working
-     * backwards from there.
-     *
-     * Will fail if i == Integer.MIN_VALUE
+    /*
+	将整数i，按照index位置，更新字符串数组buf
+	例子：
+	第一个例子：
+	char[] cc=new char[4];
+	getChars(1234,4,cc);//结果：[1, 2, 3, 4]
+	第二个例子：
+	char[] cc=new char[4];
+	getChars(12,3,cc);//结果：[ , 1, 2, ]
      */
     static void getChars(int i, int index, char[] buf) {
         int q, r;
