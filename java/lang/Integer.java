@@ -241,53 +241,76 @@ public final class Integer extends Number implements Comparable<Integer> {
             buf [--charPos] = sign;
         }
     }
-
-    /**
-     * Returns a string representation of the first argument as an
-     * unsigned integer value in the radix specified by the second
-     * argument.
-     *
-     * <p>If the radix is smaller than {@code Character.MIN_RADIX}
-     * or larger than {@code Character.MAX_RADIX}, then the radix
-     * {@code 10} is used instead.
-     *
-     * <p>Note that since the first argument is treated as an unsigned
-     * value, no leading sign character is printed.
-     *
-     * <p>If the magnitude is zero, it is represented by a single zero
-     * character {@code '0'} ({@code '\u005Cu0030'}); otherwise,
-     * the first character of the representation of the magnitude will
-     * not be the zero character.
-     *
-     * <p>The behavior of radixes and the characters used as digits
-     * are the same as {@link #toString(int, int) toString}.
-     *
-     * @param   i       an integer to be converted to an unsigned string.
-     * @param   radix   the radix to use in the string representation.
-     * @return  an unsigned string representation of the argument in the specified radix.
-     * @see     #toString(int, int)
-     * @since 1.8
+	
+    /*
+	到解析Long源码时会详细讲Long.toUnsignedString方法
+	先贴两个例子：
+	System.out.println(Integer.toUnsignedString(16,16));	//结果：10
+	System.out.println(Integer.toUnsignedString(-16,16));	//结果：fffffff0
      */
     public static String toUnsignedString(int i, int radix) {
         return Long.toUnsignedString(toUnsignedLong(i), radix);
     }
 
-    /**
-     * Returns a string representation of the argument as an unsigned
-     * decimal value.
-     *
-     * The argument is converted to unsigned decimal representation
-     * and returned as a string exactly as if the argument and radix
-     * 10 were given as arguments to the {@link #toUnsignedString(int,
-     * int)} method.
-     *
-     * @param   i  an integer to be converted to an unsigned string.
-     * @return  an unsigned string representation of the argument.
-     * @see     #toUnsignedString(int, int)
-     * @since 1.8
+    /*
+	到解析Long源码时会详细讲Long.toString方法
+	先贴两个例子：
+	System.out.println(Integer.toUnsignedString(16));	//结果：16
+	System.out.println(Integer.toUnsignedString(-16));	//结果：4294967280
      */
     public static String toUnsignedString(int i) {
         return Long.toString(toUnsignedLong(i));
+    }
+	
+	 /*
+	 将参数x转换成long形式，其中long是8字节，int是4字节
+	 所以在转变过程中，高4字节用0填充，低4字节用参数x二进制填充（这里需要记住一点：补码形式）
+	 //所以如果传入-12,则可以得到4294967284
+	 //（过程解析：
+	 //	-12 补码形式为：1111_1111_1111_1111_1111_1111_1111_0100
+	 //	高4字节填充0，则00000000_00000000_00000000_00000000_1111_1111_1111_1111_1111_1111_1111_0100
+	 //	转变成原码，则00000000_00000000_00000000_00000000_1111_1111_1111_1111_1111_1111_1111_0100
+	 //）
+	 */
+    public static long toUnsignedLong(int x) {
+        return ((long) x) & 0xffffffffL;
+    }
+
+	 /*
+	 Convert the integer to an unsigned number.
+	 转换int为一个无符号数字
+	 */
+    private static String toUnsignedString0(int val, int shift) {
+        // assert shift > 0 && shift <=5 : "Illegal shift value";
+        int mag = Integer.SIZE - Integer.numberOfLeadingZeros(val);
+        int chars = Math.max(((mag + (shift - 1)) / shift), 1);
+        char[] buf = new char[chars];
+
+        formatUnsignedInt(val, shift, buf, 0, chars);
+
+        // Use special constructor which takes over "buf".
+        return new String(buf, true);
+    }
+	
+	 /**
+     * Format a long (treated as unsigned) into a character buffer.
+     * @param val the unsigned int to format
+     * @param shift the log2 of the base to format in (4 for hex, 3 for octal, 1 for binary)
+     * @param buf the character buffer to write to
+     * @param offset the offset in the destination buffer to start at
+     * @param len the number of characters to write
+     * @return the lowest character  location used
+     */
+     static int formatUnsignedInt(int val, int shift, char[] buf, int offset, int len) {
+        int charPos = len;
+        int radix = 1 << shift;
+        int mask = radix - 1;
+        do {
+            buf[offset + --charPos] = Integer.digits[val & mask];
+            val >>>= shift;
+        } while (val != 0 && charPos > 0);
+
+        return charPos;
     }
 
     /**
@@ -404,42 +427,6 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     public static String toBinaryString(int i) {
         return toUnsignedString0(i, 1);
-    }
-
-    /**
-     * Convert the integer to an unsigned number.
-     */
-    private static String toUnsignedString0(int val, int shift) {
-        // assert shift > 0 && shift <=5 : "Illegal shift value";
-        int mag = Integer.SIZE - Integer.numberOfLeadingZeros(val);
-        int chars = Math.max(((mag + (shift - 1)) / shift), 1);
-        char[] buf = new char[chars];
-
-        formatUnsignedInt(val, shift, buf, 0, chars);
-
-        // Use special constructor which takes over "buf".
-        return new String(buf, true);
-    }
-
-    /**
-     * Format a long (treated as unsigned) into a character buffer.
-     * @param val the unsigned int to format
-     * @param shift the log2 of the base to format in (4 for hex, 3 for octal, 1 for binary)
-     * @param buf the character buffer to write to
-     * @param offset the offset in the destination buffer to start at
-     * @param len the number of characters to write
-     * @return the lowest character  location used
-     */
-     static int formatUnsignedInt(int val, int shift, char[] buf, int offset, int len) {
-        int charPos = len;
-        int radix = 1 << shift;
-        int mask = radix - 1;
-        do {
-            buf[offset + --charPos] = Integer.digits[val & mask];
-            val >>>= shift;
-        } while (val != 0 && charPos > 0);
-
-        return charPos;
     }
 
     final static int [] sizeTable = { 9, 99, 999, 9999, 99999, 999999, 9999999,
@@ -1212,27 +1199,6 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     public static int compareUnsigned(int x, int y) {
         return compare(x + MIN_VALUE, y + MIN_VALUE);
-    }
-
-    /**
-     * Converts the argument to a {@code long} by an unsigned
-     * conversion.  In an unsigned conversion to a {@code long}, the
-     * high-order 32 bits of the {@code long} are zero and the
-     * low-order 32 bits are equal to the bits of the integer
-     * argument.
-     *
-     * Consequently, zero and positive {@code int} values are mapped
-     * to a numerically equal {@code long} value and negative {@code
-     * int} values are mapped to a {@code long} value equal to the
-     * input plus 2<sup>32</sup>.
-     *
-     * @param  x the value to convert to an unsigned {@code long}
-     * @return the argument converted to {@code long} by an unsigned
-     *         conversion
-     * @since 1.8
-     */
-    public static long toUnsignedLong(int x) {
-        return ((long) x) & 0xffffffffL;
     }
 
     /**
