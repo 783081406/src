@@ -263,16 +263,15 @@ public final class Integer extends Number implements Comparable<Integer> {
     }
 	
 	 /*
-	 将参数x转换成long形式，其中long是8字节，int是4字节
-	 所以在转变过程中，高4字节用0填充，低4字节用参数x二进制填充（这里需要记住一点：补码形式）
-	 //所以如果传入-12,则可以得到4294967284
-	 //（过程解析：
-	 //	-12 补码形式为：1111_1111_1111_1111_1111_1111_1111_0100
-	 //	高4字节填充0，则00000000_00000000_00000000_00000000_1111_1111_1111_1111_1111_1111_1111_0100
-	 //	转变成原码，则00000000_00000000_00000000_00000000_1111_1111_1111_1111_1111_1111_1111_0100
-	 //）
+	 将参数转变成无符号long,前32位0填充
+	 例子：
+	 System.out.println(Integer.toUnsignedLong(12);//12
+	 System.out.println(Integer.toUnsignedLong(-12);//4294967284
 	 */
     public static long toUnsignedLong(int x) {
+		//将高32位全部变成0，低32位保持不变
+		//0xffffffffL  为  4294967295  为  [32个0][32个1]
+		//如果不理解，可以先去看我写的Java杂谈里面的8大基础类型的文章
         return ((long) x) & 0xffffffffL;
     }
 
