@@ -3,6 +3,8 @@ package java.lang;
 import java.lang.annotation.Native;
 
 public final class Integer extends Number implements Comparable<Integer> {
+	
+    @Native private static final long serialVersionUID = 1360826667806852920L;
 
      //设置int最小值界限-2的31次幂，-2147483648
     @Native public static final int   MIN_VALUE = 0x80000000;
@@ -1456,22 +1458,8 @@ public final class Integer extends Number implements Comparable<Integer> {
             ((i >>> 8) & 0xff00) | (i >>> 24);
         return i;
     }
-
-    /**
-     * Returns the signum function of the specified {@code int} value.  (The
-     * return value is -1 if the specified value is negative; 0 if the
-     * specified value is zero; and 1 if the specified value is positive.)
-     *
-     * @param i the value whose signum is to be computed
-     * @return the signum function of the specified {@code int} value.
-     * @since 1.5
-     */
-    public static int signum(int i) {
-        // HD, Section 2-7
-        return (i >> 31) | (-i >>> 31);
-    }
-
-    /**
+	
+	/**
      * Returns the value obtained by reversing the order of the bytes in the
      * two's complement representation of the specified {@code int} value.
      *
@@ -1487,47 +1475,39 @@ public final class Integer extends Number implements Comparable<Integer> {
                ((i << 24));
     }
 
-    /**
-     * Adds two integers together as per the + operator.
-     *
-     * @param a the first operand
-     * @param b the second operand
-     * @return the sum of {@code a} and {@code b}
-     * @see java.util.function.BinaryOperator
-     * @since 1.8
+    /*
+	 返回int的符号位
+	 如果是负数，返回-1
+	 如果是0，返回0
+	 如果是正数，返回1
+	 例：
+	 System.out.println(Integer.signum(-3)); //-1
+	 System.out.println(Integer.signum(0));  //0
+	 System.out.println(Integer.signum(3));  //1
+    */
+    public static int signum(int i) {
+        // HD, Section 2-7
+        return (i >> 31) | (-i >>> 31);
+    }
+
+    /*
+	将两个int的值相加，返回结果
      */
     public static int sum(int a, int b) {
         return a + b;
     }
 
-    /**
-     * Returns the greater of two {@code int} values
-     * as if by calling {@link Math#max(int, int) Math.max}.
-     *
-     * @param a the first operand
-     * @param b the second operand
-     * @return the greater of {@code a} and {@code b}
-     * @see java.util.function.BinaryOperator
-     * @since 1.8
-     */
+    /*
+	两个int的值，返回最大的int值，具体后面有Math解析会细说
+	*/
     public static int max(int a, int b) {
         return Math.max(a, b);
     }
 
-    /**
-     * Returns the smaller of two {@code int} values
-     * as if by calling {@link Math#min(int, int) Math.min}.
-     *
-     * @param a the first operand
-     * @param b the second operand
-     * @return the smaller of {@code a} and {@code b}
-     * @see java.util.function.BinaryOperator
-     * @since 1.8
-     */
+    /*
+	两个int的值，返回最小的int值，具体后面有Math解析会细说
+	*/
     public static int min(int a, int b) {
         return Math.min(a, b);
     }
-
-    /** use serialVersionUID from JDK 1.0.2 for interoperability */
-    @Native private static final long serialVersionUID = 1360826667806852920L;
 }
