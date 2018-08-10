@@ -274,7 +274,7 @@ public final class Integer extends Number implements Comparable<Integer> {
 		//如果不理解，可以先去看我写的Java杂谈里面的8大基础类型的文章
         return ((long) x) & 0xffffffffL;
     }
-
+	
 	 /*
 	 Convert the integer to an unsigned number.
 	 转换int为一个无符号数字
@@ -289,6 +289,49 @@ public final class Integer extends Number implements Comparable<Integer> {
 
         // Use special constructor which takes over "buf".
         return new String(buf, true);
+    }
+	
+	/*
+	返回二进制补码中最高位（“最左边”）前一位的零的位数
+	如果它等于零，则返回32
+	例子：
+	System.out.println(Integer.numberOfLeadingZeros(3));   //结果：30
+	3的补码为：0000_0000_0000_0000_0000_0000_00000_11
+	而最靠近11的0为第30位，所以返回30
+    */
+    public static int numberOfLeadingZeros(int i) {
+		//如果为0，则直接返回32
+        if (i == 0)
+            return 32;
+		//定义一个变量来记录0的个数
+        int n = 1;
+		//这里采用二分法(折半)思路来得到位数
+		//int为32位，第一次折半，16和16，如果高2字节都是0，则表示数据在低2字节位置，
+		//则将n(记录0个数)加16，同时将有数据的低2字节，变成高2字节
+        if (i >>> 16 == 0) { n += 16; i <<= 16; }
+		//经过上面的一步判断，数据在高2字节，
+		//同时再根据二分法，这次是8和8来划分，如果前1字节都是0，则表示数据在后一字节
+		//则将n加8，同时将有数据的后1字节，变成前1字节
+		//下面语句亦是同样操作
+        if (i >>> 24 == 0) { n +=  8; i <<=  8; }
+        if (i >>> 28 == 0) { n +=  4; i <<=  4; }
+        if (i >>> 30 == 0) { n +=  2; i <<=  2; }
+        n -= i >>> 31;
+        return n;
+		/*
+		下面将上面的方法变一下型：(可能更好理解)
+		public static int numberOfLeadingZeros(int i) {
+			if (i == 0)
+				return 32;
+			int n = 0;
+			if (i >>> 16 == 0) { n += 16; i <<= 16; }
+			if (i >>> 24 == 0) { n +=  8; i <<=  8; }
+			if (i >>> 28 == 0) { n +=  4; i <<=  4; }
+			if (i >>> 30 == 0) { n +=  2; i <<=  2; }
+			if (i >>> 31 == 0} { n +=  1;}
+			return n;
+		}
+		*/
     }
 	
 	 /**
@@ -1298,40 +1341,6 @@ public final class Integer extends Number implements Comparable<Integer> {
     public static int lowestOneBit(int i) {
         // HD, Section 2-1
         return i & -i;
-    }
-
-    /**
-     * Returns the number of zero bits preceding the highest-order
-     * ("leftmost") one-bit in the two's complement binary representation
-     * of the specified {@code int} value.  Returns 32 if the
-     * specified value has no one-bits in its two's complement representation,
-     * in other words if it is equal to zero.
-     *
-     * <p>Note that this method is closely related to the logarithm base 2.
-     * For all positive {@code int} values x:
-     * <ul>
-     * <li>floor(log<sub>2</sub>(x)) = {@code 31 - numberOfLeadingZeros(x)}
-     * <li>ceil(log<sub>2</sub>(x)) = {@code 32 - numberOfLeadingZeros(x - 1)}
-     * </ul>
-     *
-     * @param i the value whose number of leading zeros is to be computed
-     * @return the number of zero bits preceding the highest-order
-     *     ("leftmost") one-bit in the two's complement binary representation
-     *     of the specified {@code int} value, or 32 if the value
-     *     is equal to zero.
-     * @since 1.5
-     */
-    public static int numberOfLeadingZeros(int i) {
-        // HD, Figure 5-6
-        if (i == 0)
-            return 32;
-        int n = 1;
-        if (i >>> 16 == 0) { n += 16; i <<= 16; }
-        if (i >>> 24 == 0) { n +=  8; i <<=  8; }
-        if (i >>> 28 == 0) { n +=  4; i <<=  4; }
-        if (i >>> 30 == 0) { n +=  2; i <<=  2; }
-        n -= i >>> 31;
-        return n;
     }
 
     /**
